@@ -259,15 +259,20 @@ const CONTENT = {
       ] }
   },
 
-  // 書いた内容に、そっと触れる一文（{x} は本人が書いた言葉が入ります）
+  // ＜wellbeingへの配慮＞
+  //   書いてくれた内容そのものは引用せず、「目を向けられたこと・書けたこと」を
+  //   そっと褒めます。こうすると、しんどい日に不健全な対処（お酒など）が
+  //   書かれても、それを肯定してしまう心配がなく、温かさは保てます。
   reflect: {
     good: [
-      "「{x}」——そんな小さなことに気づけたなら、それはもう、昨日のあなたより ひとつ前に進めた証拠だよ。",
-      "「{x}」、よく見つけられたね。しんどい中でも光を拾えるあなたは、自分で思ってるより ずっとつよい。"
+      "よかったことに目を向けられたんやね。しんどい日でも、そうやって光を探せるあなたの心、私はすてきだと思う。",
+      "うれしかったことを、ひとつでも見つけられたね。その視点を持てたこと自体が、今日の小さな宝物だよ。",
+      "小さなよかったことを書きとめられたこと。それだけで もう、自分をいたわれてる証拠だよ。"
     ],
     gratitude: [
-      "「{x}」に目を向けられたあなたの、そのまなざしが、私はやさしいなあと思う。",
-      "「{x}」——ありがとうって思える心が、今日もあなたの中にあった。それは、すごく豊かなことだよ。"
+      "ありがとうって思えることに気づけたんやね。そのやわらかいまなざしを、私はいいなあと思う。",
+      "感謝を見つけられた今日のあなたは、心がやさしく動いてた証拠だよ。",
+      "ありがとうを見つけられる目を、今日も持っていられたんやね。それは、とても豊かなことだよ。"
     ],
     hard: [
       "つらかったことを、よく書けたね。それは失敗じゃなくて、心が拾った大事な“気づき”。見ないふりするより、ずっと勇気のいることだよ。",
@@ -391,10 +396,11 @@ function buildMessage(entry) {
   const parts = [];
   parts.push(pick(wc.acknowledge, seed + "a"));
   const a = entry.answers;
+  // 記入があった「事実」だけを使って、内容そのものは本文に引用しない（wellbeing配慮）
   if (a.good && a.good.trim()) {
-    parts.push(pick(CONTENT.reflect.good, seed + "g").replace("{x}", a.good.trim()));
+    parts.push(pick(CONTENT.reflect.good, seed + "g"));
   } else if (a.gratitude && a.gratitude.trim()) {
-    parts.push(pick(CONTENT.reflect.gratitude, seed + "t").replace("{x}", a.gratitude.trim()));
+    parts.push(pick(CONTENT.reflect.gratitude, seed + "t"));
   }
   if (a.hard && a.hard.trim()) parts.push(pick(CONTENT.reflect.hard, seed + "h"));
   parts.push(pick(wc.nudge, seed + "n"));
