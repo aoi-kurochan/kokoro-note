@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>心ノート</title>
+<style>
+  :root {
+    --bg1: #f5f3ee;
+    --bg2: #eaf0ed;
+    --card: #fffdf9;
+    --text: #43474e;
+    --muted: #9aa0a6;
+    --accent: #7e9c91;
+    --accent-d: #5f8175;
+    --accent-soft: #e7efe9;
+    --line: #ece8df;
+    --shadow: 0 6px 22px rgba(90,100,95,0.10);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+    color: var(--text);
+    background: linear-gradient(165deg, var(--bg1), var(--bg2));
+    background-attachment: fixed;
+    min-height: 100vh;
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  #app { max-width: 480px; margin: 0 auto; padding: 18px 16px 110px; }
+
+  header.top { text-align: center; padding: 12px 0 6px; }
+  header.top h1 { font-size: 22px; margin: 0; letter-spacing: 3px; color: var(--accent-d); font-weight: 600; }
+  header.top .sub { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .today-label { text-align:center; font-size: 13px; color: var(--muted); margin: 4px 0 16px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 16px; margin: 0 0 12px; color: var(--accent-d); font-weight: 600; }
+  .q { margin-bottom: 20px; }
+  .q:last-child { margin-bottom: 6px; }
+  .q .label { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .q .hint { font-size: 12.5px; color: var(--muted); margin-bottom: 9px; }
+
+  /* スケール（1〜5） */
+  .scale { display: flex; gap: 7px; }
+  .scale button {
+    flex: 1; padding: 11px 0; border-radius: 12px; border: 1.5px solid var(--line);
+    background: #fff; color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: all .15s;
+  }
+  .scale button.on { background: var(--accent); border-color: var(--accent); color: #fff; transform: translateY(-1px); }
+  .scale-ends { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+
+  textarea {
+    width: 100%; min-height: 64px; resize: vertical; padding: 11px 12px; font-size: 15px;
+    border: 1.5px solid var(--line); border-radius: 12px; background: #fffefb; color: var(--text);
+    font-family: inherit; line-height: 1.6;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+
+  .btn {
+    display: block; width: 100%; padding: 15px; border: none; border-radius: 14px;
+    font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn-main { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(126,156,145,0.4); }
+  .btn-main:active { transform: translateY(1px); }
+  .btn-sub { background: #fff; color: var(--accent-d); border: 1.5px solid var(--accent); margin-top: 10px; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); margin-top: 10px; }
+  .btn-danger { background: #fff; color: #c4736b; border: 1.5px solid #e7c4bf; }
+
+  /* 結果（心の天気） */
+  .weather-card { text-align: center; padding: 26px 18px; }
+  .weather-icon { font-size: 64px; line-height: 1; }
+  .weather-label { font-size: 22px; font-weight: 700; margin: 8px 0 2px; }
+  .weather-desc { font-size: 13.5px; color: var(--muted); }
+  .score-wrap { margin: 18px 0 4px; }
+  .score-num { font-size: 30px; font-weight: 700; color: var(--accent-d); }
+  .score-cap { font-size: 12px; color: var(--muted); }
+  .bar { height: 10px; background: var(--accent-soft); border-radius: 6px; overflow: hidden; margin-top: 10px; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #a9c6b9, var(--accent)); border-radius: 6px; }
+
+  .msg-card { background: linear-gradient(160deg, #fffdf8, #f4f1e9); }
+  .msg-card .msg { font-size: 15px; white-space: pre-wrap; line-height: 1.95; }
+  .msg-card .msg-head { font-size: 13px; color: var(--accent-d); font-weight: 600; margin-bottom: 8px; }
+
+  .consult pre {
+    white-space: pre-wrap; word-break: break-word; background: #f7f5ef; border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px; font-size: 12.5px; color: #555; max-height: 180px; overflow: auto;
+    font-family: inherit; margin: 0 0 10px;
+  }
+  .copied { text-align: center; font-size: 13px; color: var(--accent-d); height: 18px; margin-top: 6px; }
+
+  /* 7日間 */
+  .week { display: flex; gap: 6px; align-items: flex-end; justify-content: space-between; }
+  .week .day { flex: 1; text-align: center; }
+  .week .col { height: 88px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+  .week .col i {
+    display: block; width: 70%; background: linear-gradient(180deg, #a9c6b9, var(--accent));
+    border-radius: 6px 6px 0 0; min-height: 3px;
+  }
+  .week .emoji { font-size: 17px; height: 22px; }
+  .week .dlabel { font-size: 10.5px; color: var(--muted); margin-top: 5px; }
+  .week .none { color: #cfd3cc; font-size: 16px; }
+
+  /* 履歴リスト */
+  .entry { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .entry:last-child { border-bottom: none; }
+  .entry .e-emoji { font-size: 26px; width: 32px; text-align: center; }
+  .entry .e-date { flex: 1; }
+  .entry .e-date .d1 { font-size: 14.5px; font-weight: 600; }
+  .entry .e-date .d2 { font-size: 12px; color: var(--muted); }
+  .entry .e-score { font-size: 14px; color: var(--accent-d); font-weight: 600; }
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 24px 0; }
+
+  /* ナビ */
+  nav.bottom {
+    position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,253,249,0.96);
+    border-top: 1px solid var(--line); display: flex; backdrop-filter: blur(6px);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav.bottom button {
+    flex: 1; padding: 12px 0 13px; border: none; background: none; cursor: pointer; font-family: inherit;
+    color: var(--muted); font-size: 12px;
+  }
+  nav.bottom button .ic { font-size: 20px; display: block; line-height: 1.2; }
+  nav.bottom button.on { color: var(--accent-d); font-weight: 600; }
+
+  /* モーダル */
+  .overlay { position: fixed; inset: 0; background: rgba(40,45,42,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .sheet { background: var(--card); width: 100%; max-width: 480px; max-height: 86vh; overflow: auto; border-radius: 20px 20px 0 0; padding: 20px 18px calc(24px + env(safe-area-inset-bottom)); }
+  .sheet h3 { margin: 0 0 4px; font-size: 18px; color: var(--accent-d); }
+  .sheet .qa { margin: 14px 0; }
+  .sheet .qa .qt { font-size: 13px; color: var(--muted); }
+  .sheet .qa .at { font-size: 15px; white-space: pre-wrap; }
+  .disclaimer { font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.7; margin-top: 6px; }
+  .toast { position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%); background: rgba(60,70,64,0.92); color:#fff; padding: 10px 18px; border-radius: 20px; font-size: 13px; z-index: 60; opacity: 0; transition: opacity .25s; pointer-events:none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <nav class="bottom">
+    <button id="navToday" class="on" onclick="switchTab('today')"><span class="ic">🖊️</span><span class="lbl" id="lblToday"></span></button>
+    <button id="navHistory" onclick="switchTab('history')"><span class="ic">📅</span><span class="lbl" id="lblHistory"></span></button>
+  </nav>
+  <div id="toast" class="toast"></div>
+
+<script>
+/* =========================================================================
+   ▼▼▼ 文言（言葉）はぜんぶ、この CONTENT の中にまとめてあります ▼▼▼
+
+   ・ここに入っている文章は、あおいさんの過去メルマガから「口調」だけでなく
+     「価値観・信条（しんどさはあなたのせいじゃない／比べるのは昨日の自分／
+     休んでいい／焦らない／目的は心の余白 など）」を学んだうえで、
+     すべてあたらしく書き起こしたものです。
+   ・メルマガの本文・原文は、このファイルのどこにも入っていません。
+   ・あとで言葉を直したくなったら、この CONTENT の中だけ書き換えればOK。
+     下のプログラム部分はさわらなくて大丈夫です。
+   ========================================================================= */
+const CONTENT = {
+  appTitle: "心ノート",
+  appSub: "今日のあなたの心、そっと聞かせてね",
+
+  nav: { today: "今日を書く", history: "ふりかえり" },
+
+  // 15の問い（type: scale=1〜5の数字 / text=自由記入）
+  // inScore:true の数字が「心の天気・スコア」の計算に使われます
+  // invert:true は「大きいほどしんどい」項目（不安など）
+  questions: [
+    { id: "mood",       type: "scale", inScore: true,  label: "今日の気分は、どんな感じ？",           low: "しずんでた", high: "晴れやか" },
+    { id: "energy",     type: "scale", inScore: true,  label: "体の元気さは、どれくらい？",           low: "へとへと",   high: "元気" },
+    { id: "anxiety",    type: "scale", inScore: true, invert: true, label: "不安やザワザワ、どれくらいあった？", low: "おだやか", high: "強かった" },
+    { id: "sleep",      type: "scale", inScore: true,  label: "昨日の夜は、ちゃんと眠れた？",         low: "あんまり",   high: "ぐっすり" },
+    { id: "calm",       type: "scale", inScore: true,  label: "心の余裕は、どれくらいある？",         low: "いっぱいいっぱい", high: "ゆったり" },
+    { id: "connect",    type: "scale", inScore: true,  label: "今日、誰かとつながれた感じはあった？", low: "ひとりだった", high: "あった" },
+    { id: "gratitude",  type: "text",  label: "今日、ありがとうって思えたことは？", hint: "ほんの小さなことでいいよ。なければ、空っぽのままでも大丈夫。", placeholder: "例：あったかいお茶が、しみた" },
+    { id: "good",       type: "text",  label: "今日、よかったこと・うれしかったことは？", placeholder: "例：少しだけ、早起きできた" },
+    { id: "hard",       type: "text",  label: "今日、つらかった・しんどかったことは？", hint: "ここで、そっと吐き出しちゃおう。それでいいからね。", placeholder: "例：仕事で、うまくいかなかった" },
+    { id: "worry",      type: "text",  label: "今、いちばん心に引っかかってることは？", placeholder: "例：来週のことが、気になってる" },
+    { id: "praise",     type: "text",  label: "今日の自分を、ちょっとだけほめるなら？", placeholder: "例：とりあえず、一日を終えられた" },
+    { id: "body",       type: "text",  label: "体で、気になるところはある？", hint: "肩がこった、よく眠れない…なんでもいいよ。", placeholder: "例：肩が、重たい" },
+    { id: "letgo",      type: "text",  label: "今日、そっと手放したい気持ちは？", placeholder: "例：人と比べちゃう気持ち" },
+    { id: "step",       type: "text",  label: "明日の“小さな一歩”は、なにかな？", hint: "がんばりすぎない、ちいさなことでいいよ。", placeholder: "例：朝、カーテンを開ける" },
+    { id: "word",       type: "text",  label: "今のあなたに、ひとこと声をかけるなら？", placeholder: "例：きょうも、おつかれさま" }
+  ],
+
+  // 心の天気（数字の平均から判定）
+  // acknowledge=まず受け止める言葉 / nudge=そっと前を向かせる言葉
+  // それぞれ複数あり、その日ごとに自動で選ばれます（=毎日ちがう励ましになる）
+  weathers: {
+    sunny:  { emoji: "☀️", label: "晴れ", desc: "心に、やわらかい光が差してる感じ",
+      acknowledge: [
+        "今日は、心がちょっと軽くいられたみたいだね。それって運がよかったんじゃなくて、あなたがコツコツ積み重ねてきたものなんよ。",
+        "なんだか今日は、少し息がしやすい一日だったのかな。こういう日を ちゃんと感じとれること自体が、もう素敵なことだと思う。",
+        "今日のあなたの心には、あったかい光が差してたみたい。よかった。この感じも、まぎれもなくあなたのものだよ。",
+        "晴れの日だね。昨日のあなたより ほんの少しでも軽くなれてたら、それでもう、じゅうぶん花マルだよ。",
+        "今日は、心がふっとほどけてた感じ、するかな。うん、その感覚は、覚えておく価値があるよ。"
+      ],
+      nudge: [
+        "この感じは、むりに握りしめなくて大丈夫。晴れの日も雨の日も、ぜんぶあなた。どっちのあなたにも、ちゃんと同じだけ価値があるからね。",
+        "がんばろう、ってまだ思わなくていい。いい日を いい日のまま味わうのも、立派に自分を大事にする時間だよ。",
+        "今日のこの軽さを、心のどこかにそっとしまっておこう。また曇る日が来ても、「あの光は自分の中にある」って思い出せるように。",
+        "明日もこうじゃなきゃ、なんて思わなくていいからね。心は天気みたいに移ろうもの。今日のあなたで、もう十分。",
+        "誰かと比べて「まだ足りない」なんて、今日は思わないでね。あなたの物差しで、今日はいい日。それでいいんよ。"
+      ] },
+    cloudy: { emoji: "⛅", label: "くもり", desc: "晴れでも雨でもない、そんな日",
+      acknowledge: [
+        "今日は、晴れとも雨ともいえない…そんなぼんやりした一日だったのかな。でも、ふつうに一日を回せてたなら、それだけで ほんとはすごいことなんよ。",
+        "なんとなく曇り空みたいな心の日。こういう日に自分の心をのぞきにこれたあなたは、ちゃんと自分を大事にできてるよ。",
+        "はっきりしない気持ちのまま一日を過ごすのって、地味にしんどいよね。それでもここまで来たこと、私はちゃんと、すごいと思う。",
+        "今日は、心が少しだけ重たかったかな。コンディションが落ちると、誰だって気分は曇るもの。あなたのせいじゃないからね。",
+        "晴れきらない日って、あるよね。私もしょっちゅうある。だから今日は、できなかったことより、できたことを数えてみよう。"
+      ],
+      nudge: [
+        "むりに晴れさせなくていい。曇りの日は、曇りのままのあなたで ちゃんと十分。完璧な一日じゃなくて大丈夫だからね。",
+        "今日はハードルをうんと下げよう。やる気が出るのを待たなくていい。ちいさく動いてみたら、気持ちはあとからついてくるから。",
+        "比べるなら、ほかの誰かじゃなくて、昨日のあなた。ほんの少しでも進めてたら、それはもう、ちゃんとした一歩だよ。",
+        "焦らなくて大丈夫。心も天気とおなじで、ひとりでに動いていくから。今日は、ただ自分をやすませる日にしてもいいんよ。",
+        "明日のことは、明日のあなたにまかせよう。今夜は肩の力をすこし抜いて、ゆっくりしてね。"
+      ] },
+    rain:   { emoji: "🌧️", label: "雨", desc: "心に、しずかに雨が降っていた日",
+      acknowledge: [
+        "今日は、心にちょっと雨が降ってたんだね。しんどかったね。でもね、それはあなたが弱いからじゃない。疲れがたまると、心は誰でも雨模様になるものなんよ。",
+        "重たい気持ちの一日だったのかな。そんな日に自分の心を見にきてくれたこと、それだけで もう、ちゃんと自分を大事にできてる証拠だよ。",
+        "雨の日みたいに、うまく晴れない一日だったんだね。がんばってなかったわけじゃない。むしろ見えないところで、あなたは踏ん張ってたんだと思う。",
+        "今日はつらかったね。その気持ち、なかったことにしなくていい。しんどいって感じられるのは、ちゃんと自分の心と向き合えてるからだよ。",
+        "心が濡れて重たくなる日って、あるよね。私も知ってる。だから、ひとりで抱えこまないで。ここに書けただけで、もう十分えらい。"
+      ],
+      nudge: [
+        "雨の日は、傘をさして ゆっくり休んでいいよ。休むのはサボりじゃない。ちゃんと自分で選んだ、大事な休息だからね。",
+        "前に進むのは、空が少し明るくなってからで ちゃんと間に合う。今日はただ、自分をいたわるだけでいい。それも、立派な前進だよ。",
+        "しんどい夜に、大きなことを決めなくて大丈夫。判断は、よく眠ってからでいい。今日のつらさは、ずっとは続かないからね。",
+        "がんばらない、っていう選択を、今日のあなたに許してあげよう。雨はいつか、ちゃんとやむから。",
+        "明日できる ほんのちいさなことを ひとつだけ思い浮かべたら、あとは今夜、そっと目を閉じよう。それで十分。"
+      ] },
+    storm:  { emoji: "⛈️", label: "嵐", desc: "心が、ずいぶん揺れた一日",
+      acknowledge: [
+        "今日は、心がずいぶん揺れた一日だったね。そんな中で こうして言葉にできたこと、それだけで ほんとうにすごいことだよ。",
+        "嵐みたいに、心がかき乱された日だったんだね。でも、これはあなたのせいじゃない。嵐そのものが大きすぎただけ。よく もちこたえたね。",
+        "しんどかったね。きっと外からは見えないところで、あなたは精いっぱい踏ん張ってた。今日を生き延びた、それだけで もう、今日いちばんの大仕事だよ。",
+        "こんなに揺れた日に、自分の心を書きとめにくるなんて。あなたは、自分で思ってるより ずっと強い人だね。",
+        "今日はもう、十分すぎるくらいがんばった。これ以上 自分を責めないであげて。がんばってないあなたなんて、どこにもいないよ。"
+      ],
+      nudge: [
+        "嵐の日は、何もできなくて当たり前。今日はただ、自分を守ることだけ考えていい。あなたはもう、十分すぎるほどがんばってるからね。",
+        "今は前を向けなくて当然だよ。大事なことは、嵐が過ぎてから考えればいい。今夜は、ただ自分を抱きしめてあげて。",
+        "ひとりで抱えきれないときは、誰かに「しんどい」ってこぼしていい。それは弱さじゃなくて、自分を守る力だよ。あなたは、頼っていい人だからね。",
+        "がんばれ、なんて今日は言わない。今夜はあったかくして、ただ眠れますように。ほんとに、それだけでいい。",
+        "明日のことは、今は考えなくていい。今日のあなたは、ここにいてくれた。それだけで、もう花マル。じゅうぶんだよ。"
+      ] }
+  },
+
+  // 書いた内容に、そっと触れる一文（{x} は本人が書いた言葉が入ります）
+  reflect: {
+    good: [
+      "「{x}」——そんな小さなことに気づけたなら、それはもう、昨日のあなたより ひとつ前に進めた証拠だよ。",
+      "「{x}」、ちゃんと見つけられたね。しんどい中でも光を拾えるあなたは、自分で思ってるより ずっとつよい。"
+    ],
+    gratitude: [
+      "「{x}」に目を向けられたあなたの、そのまなざしが、私はやさしいなあと思う。",
+      "「{x}」——ありがとうって思える心が、今日もちゃんとあなたの中にあった。それは、すごく豊かなことだよ。"
+    ],
+    hard: [
+      "つらかったことを、ちゃんと書けたね。それは失敗じゃなくて、心が拾った大事な“気づき”。見ないふりするより、ずっと勇気のいることだよ。",
+      "しんどかったことを、しんどいって言えたね。うん、それでいい。自分を責めなくて大丈夫。あなたは、ちゃんとよくやってるよ。"
+    ]
+  },
+
+  // 画面のことば
+  ui: {
+    todayPrefix: "今日 ",
+    formHead: "今日の15の問い",
+    weatherHead: "今日の心の天気",
+    scoreCap: "今日の心スコア（100点満点）",
+    scoreSuffix: "点",
+    msgHead: "今日のあなたへ",
+    saveBtn: "今日のこころを、保存する",
+    cancelBtn: "やめておく",
+    rewriteBtn: "今日のこころを、書き直す",
+    alreadyToday: "今日はもう、書いてくれたね。見直しも、書き直しもできるよ。",
+    consultHead: "もうちょっと、誰かに聞いてほしいとき",
+    consultLead: "下の文をコピーして、Claude（クロード）みたいなAIに貼ってみてね。今日のあなたの気持ちを、そっと受け止めて、話を聞いてくれるよ。",
+    copyBtn: "相談文をコピーする",
+    copied: "コピーしたよ",
+    weekHead: "この7日間の、心もよう",
+    listHead: "これまでのこころ",
+    emptyList: "まだ、なんにも書いてないね。\n「今日を書く」から、ゆっくりはじめてみよう。",
+    emptyWeek: "すこし書きためると、ここに7日間の心の移り変わりが、見えてくるよ。",
+    viewClose: "とじる",
+    deleteBtn: "この日の記録を消す",
+    resetBtn: "ぜんぶのデータを消す",
+    resetConfirm: "これまでの記録を、ぜんぶ消します。元には戻せないけど、ほんとうに大丈夫…？",
+    deleteConfirm: "この日の記録を消します。いいかな？",
+    deleted: "消したよ",
+    saved: "保存したよ。書いてくれて、ありがとう。",
+    saveFailed: "今は保存できなかったみたい…。上の案内を見てね。",
+    storageWarn: "いま、この開き方だと「保存」ができない状態みたい（ファイルを直接ひらくと、こうなることがあるよ）。Chromeで開くか、ネット上に公開すると、ちゃんと保存できるようになるよ。※書いた内容は、あなたの端末の中だけに残ります。",
+    privacyNote: "🔒 ここに書いた内容は、この端末（ブラウザ）の中だけに保存されます。インターネットに送られることはなく、作者や他の人が見ることはできません。"
+  },
+
+  // AIに貼る相談文のテンプレ（これもあおいさんの声で）
+  consult: {
+    intro: "あなたは、やさしく寄り添って話を聞いてくれる相談相手です。下は、今日の私のジャーナリングです。どうか、まず私の気持ちをそのまま受け止めてください。そのうえで、急がせたり、誰かと比べさせたりせず、そっと一緒に考えてほしいです。しんどさを私のせいにしないで、休んでもいいと言ってもらえると安心します。「前向きに」と押しつけたり、医療的な診断や断定をしたりは、しないでくださいね。",
+    footer: "今日の私に、やさしい言葉をかけてもらえたら、うれしいです。"
+  },
+
+  disclaimer: "※ 心ノートは、お医者さんでも、診断でもないよ。気持ちがどうしてもつらいときは、ひとりで抱えこまないで、信頼できる人や専門の窓口にも、そっと頼ってね。"
+};
+/* =========================================================================
+   ▲▲▲ 文言ここまで。以下はプログラム（基本さわらなくてOK） ▲▲▲
+   ========================================================================= */
+
+const STORAGE_KEY = "kokoro-note-v1";
+const app = document.getElementById("app");
+const toastEl = document.getElementById("toast");
+let entries = loadEntries();
+let storageOK = true;
+let activeTab = "today";
+let editingToday = false;
+let draft = {};
+
+/* ---- 保存まわり ---- */
+function loadEntries() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); storageOK = true; return true; }
+  catch (e) { storageOK = false; return false; }
+}
+// この開き方で保存が使えるか、起動時にそっと確認する
+function probeStorage() {
+  try { localStorage.setItem("__kokoro_probe", "1"); localStorage.removeItem("__kokoro_probe"); storageOK = true; }
+  catch (e) { storageOK = false; }
+}
+
+/* ---- 日付 ---- */
+function keyOf(d) {
+  d = d || new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), da = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${da}`;
+}
+const WEEK = ["日","月","火","水","木","金","土"];
+function prettyDate(key) {
+  const [y,m,d] = key.split("-").map(Number);
+  const dt = new Date(y, m-1, d);
+  return `${m}月${d}日（${WEEK[dt.getDay()]}）`;
+}
+
+/* ---- スコア＆天気 ---- */
+function computeScoreWeather(answers) {
+  let sum = 0, n = 0;
+  CONTENT.questions.forEach(q => {
+    if (q.type === "scale" && q.inScore) {
+      let v = Number(answers[q.id] || 3);
+      if (q.invert) v = 6 - v;
+      sum += v; n++;
+    }
+  });
+  const avg = n ? sum / n : 3;
+  const score = Math.round((avg - 1) / 4 * 100);
+  let weather = "storm";
+  if (avg >= 4.0) weather = "sunny";
+  else if (avg >= 3.0) weather = "cloudy";
+  else if (avg >= 2.0) weather = "rain";
+  return { score, weather };
+}
+
+/* ---- 文章のえらび方（その日で固定。日替わりで変わる）---- */
+function seeded(seed, len) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return h % len;
+}
+function pick(arr, seed) { return arr[seeded(seed, arr.length)]; }
+
+/* ---- 励ましメッセージ生成 ---- */
+function buildMessage(entry) {
+  const wc = CONTENT.weathers[entry.weather];
+  // スコアも種に混ぜて、天気＆気分ごとにちがう組み合わせになるように
+  const seed = entry.date + entry.weather + entry.score;
+  const parts = [];
+  parts.push(pick(wc.acknowledge, seed + "a"));
+  const a = entry.answers;
+  if (a.good && a.good.trim()) {
+    parts.push(pick(CONTENT.reflect.good, seed + "g").replace("{x}", a.good.trim()));
+  } else if (a.gratitude && a.gratitude.trim()) {
+    parts.push(pick(CONTENT.reflect.gratitude, seed + "t").replace("{x}", a.gratitude.trim()));
+  }
+  if (a.hard && a.hard.trim()) parts.push(pick(CONTENT.reflect.hard, seed + "h"));
+  parts.push(pick(wc.nudge, seed + "n"));
+  return parts.join("\n\n");
+}
+
+/* ---- 相談文生成 ---- */
+function buildConsult(entry) {
+  const c = CONTENT.consult, lines = [c.intro, ""];
+  lines.push(`【今日の心の天気】${CONTENT.weathers[entry.weather].label}`);
+  lines.push(`【心スコア】${entry.score} / 100`);
+  CONTENT.questions.forEach(q => {
+    const a = entry.answers[q.id];
+    if (q.type === "scale") lines.push(`【${q.label}】${a || "-"} / 5`);
+    else if (a && a.trim()) lines.push(`【${q.label}】${a.trim()}`);
+  });
+  lines.push("", c.footer);
+  return lines.join("\n");
+}
+
+/* ---- トースト ---- */
+let toastT;
+function toast(msg) {
+  toastEl.textContent = msg; toastEl.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toastEl.classList.remove("show"), 1600);
+}
+
+/* ---- HTMLエスケープ ---- */
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c])); }
+
+/* ===== 画面切り替え ===== */
+function switchTab(tab) {
+  activeTab = tab;
+  if (tab === "today") editingToday = false;
+  document.getElementById("navToday").classList.toggle("on", tab === "today");
+  document.getElementById("navHistory").classList.toggle("on", tab === "history");
+  render();
+  window.scrollTo(0, 0);
+}
+
+/* ===== レンダリング ===== */
+function render() {
+  let html = `<header class="top"><h1>${CONTENT.appTitle}</h1><div class="sub">${CONTENT.appSub}</div></header>`;
+  html += `<div class="today-label">${CONTENT.ui.todayPrefix}${prettyDate(keyOf())}</div>`;
+  if (!storageOK) {
+    html += `<div class="card" style="border-color:#e7c4bf;background:#fff8f6"><div style="color:#c4736b;font-size:13px;line-height:1.7">${esc(CONTENT.ui.storageWarn)}</div></div>`;
+  }
+  html += (activeTab === "today") ? renderToday() : renderHistory();
+  html += `<div class="disclaimer">${esc(CONTENT.ui.privacyNote)}</div>`;
+  html += `<div class="disclaimer">${CONTENT.disclaimer}</div>`;
+  app.innerHTML = html;
+  if (activeTab === "today" && (editingToday || !entries[keyOf()])) bindForm();
+}
+
+function renderToday() {
+  const todayEntry = entries[keyOf()];
+  if (todayEntry && !editingToday) return renderResult(todayEntry, true);
+
+  // 入力フォーム
+  if (!editingToday) draft = {};
+  let h = `<div class="card"><h2>${CONTENT.ui.formHead}</h2>`;
+  CONTENT.questions.forEach((q, i) => {
+    h += `<div class="q"><div class="label">${i+1}. ${esc(q.label)}</div>`;
+    if (q.hint) h += `<div class="hint">${esc(q.hint)}</div>`;
+    if (q.type === "scale") {
+      h += `<div class="scale" data-id="${q.id}">`;
+      for (let v = 1; v <= 5; v++) {
+        const on = String(draft[q.id]) === String(v) ? "on" : "";
+        h += `<button type="button" class="${on}" data-v="${v}">${v}</button>`;
+      }
+      h += `</div><div class="scale-ends"><span>${esc(q.low||"")}</span><span>${esc(q.high||"")}</span></div>`;
+    } else {
+      h += `<textarea data-id="${q.id}" placeholder="${esc(q.placeholder||"")}">${esc(draft[q.id]||"")}</textarea>`;
+    }
+    h += `</div>`;
+  });
+  h += `<button class="btn btn-main" onclick="saveToday()">${CONTENT.ui.saveBtn}</button>`;
+  if (entries[keyOf()]) h += `<button class="btn btn-ghost" onclick="switchTab('today')">${CONTENT.ui.cancelBtn}</button>`;
+  h += `</div>`;
+  return h;
+}
+
+function bindForm() {
+  app.querySelectorAll(".scale").forEach(row => {
+    const id = row.dataset.id;
+    row.querySelectorAll("button").forEach(b => {
+      b.addEventListener("click", () => {
+        draft[id] = Number(b.dataset.v);
+        row.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+        b.classList.add("on");
+      });
+    });
+  });
+  app.querySelectorAll("textarea[data-id]").forEach(t => {
+    t.addEventListener("input", () => { draft[t.dataset.id] = t.value; });
+  });
+}
+
+function renderResult(entry, showActions) {
+  const wc = CONTENT.weathers[entry.weather];
+  let h = "";
+  h += `<div class="card weather-card">
+      <div class="weather-icon">${wc.emoji}</div>
+      <div class="weather-label">${wc.label}</div>
+      <div class="weather-desc">${esc(wc.desc)}</div>
+      <div class="score-wrap">
+        <div class="score-num">${entry.score}</div>
+        <div class="score-cap">${CONTENT.ui.scoreCap}</div>
+        <div class="bar"><i style="width:${entry.score}%"></i></div>
+      </div>
+    </div>`;
+
+  h += `<div class="card msg-card">
+      <div class="msg-head">${CONTENT.ui.msgHead}</div>
+      <div class="msg">${esc(buildMessage(entry))}</div>
+    </div>`;
+
+  const consultText = buildConsult(entry);
+  h += `<div class="card consult">
+      <h2>${CONTENT.ui.consultHead}</h2>
+      <div class="hint" style="color:var(--muted);font-size:12.5px;margin-bottom:10px;">${esc(CONTENT.ui.consultLead)}</div>
+      <pre id="consultText">${esc(consultText)}</pre>
+      <button class="btn btn-sub" onclick="copyConsult()">${CONTENT.ui.copyBtn}</button>
+      <div class="copied" id="copiedMsg"></div>
+    </div>`;
+
+  if (showActions) {
+    h += `<button class="btn btn-sub" onclick="startRewrite()">${CONTENT.ui.rewriteBtn}</button>`;
+  }
+  return h;
+}
+
+function startRewrite() {
+  editingToday = true;
+  draft = Object.assign({}, entries[keyOf()] ? entries[keyOf()].answers : {});
+  render();
+  window.scrollTo(0, 0);
+  toast(CONTENT.ui.alreadyToday);
+}
+
+function saveToday() {
+  const date = keyOf();
+  const answers = Object.assign({}, draft);
+  CONTENT.questions.forEach(q => { if (q.type === "scale" && !answers[q.id]) answers[q.id] = 3; });
+  const { score, weather } = computeScoreWeather(answers);
+  entries[date] = { date, answers, score, weather, savedAt: new Date().toISOString() };
+  const ok = persist();      // 保存に失敗しても、画面は必ず先へ進める
+  editingToday = false;
+  render();
+  window.scrollTo(0, 0);
+  toast(ok ? CONTENT.ui.saved : CONTENT.ui.saveFailed);
+}
+
+function copyConsult() {
+  const text = entries[keyOf()] ? buildConsult(entries[keyOf()]) : document.getElementById("consultText").textContent;
+  const done = () => { const m = document.getElementById("copiedMsg"); if (m) m.textContent = CONTENT.ui.copied; toast(CONTENT.ui.copied); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+/* ===== ふりかえり ===== */
+function renderHistory() {
+  let h = "";
+
+  // 7日間
+  h += `<div class="card"><h2>${CONTENT.ui.weekHead}</h2>`;
+  const days = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const k = keyOf(d);
+    days.push({ k, d, entry: entries[k] });
+  }
+  const hasAny = days.some(x => x.entry);
+  if (hasAny) {
+    h += `<div class="week">`;
+    days.forEach(x => {
+      if (x.entry) {
+        const wc = CONTENT.weathers[x.entry.weather];
+        h += `<div class="day">
+            <div class="col"><i style="height:${Math.max(3, x.entry.score)}%"></i></div>
+            <div class="emoji">${wc.emoji}</div>
+            <div class="dlabel">${x.d.getMonth()+1}/${x.d.getDate()}<br>${WEEK[x.d.getDay()]}</div>
+          </div>`;
+      } else {
+        h += `<div class="day">
+            <div class="col"><span class="none">·</span></div>
+            <div class="emoji"></div>
+            <div class="dlabel">${x.d.getMonth()+1}/${x.d.getDate()}<br>${WEEK[x.d.getDay()]}</div>
+          </div>`;
+      }
+    });
+    h += `</div>`;
+  } else {
+    h += `<div class="empty">${esc(CONTENT.ui.emptyWeek)}</div>`;
+  }
+  h += `</div>`;
+
+  // 日記リスト
+  h += `<div class="card"><h2>${CONTENT.ui.listHead}</h2>`;
+  const list = Object.values(entries).sort((a, b) => b.date.localeCompare(a.date));
+  if (list.length === 0) {
+    h += `<div class="empty">${esc(CONTENT.ui.emptyList).replace(/\n/g,"<br>")}</div>`;
+  } else {
+    list.forEach(e => {
+      const wc = CONTENT.weathers[e.weather];
+      h += `<div class="entry" onclick="openEntry('${e.date}')">
+          <div class="e-emoji">${wc.emoji}</div>
+          <div class="e-date"><div class="d1">${prettyDate(e.date)}</div><div class="d2">${wc.label}</div></div>
+          <div class="e-score">${e.score}${CONTENT.ui.scoreSuffix}</div>
+        </div>`;
+    });
+  }
+  h += `</div>`;
+
+  if (list.length > 0) {
+    h += `<button class="btn btn-danger" onclick="resetAll()">${CONTENT.ui.resetBtn}</button>`;
+  }
+  return h;
+}
+
+/* ---- 過去の日記を見る（モーダル） ---- */
+function openEntry(date) {
+  const e = entries[date];
+  if (!e) return;
+  const wc = CONTENT.weathers[e.weather];
+  let h = `<div class="overlay" onclick="if(event.target===this)closeSheet()"><div class="sheet">`;
+  h += `<div style="text-align:center">
+      <div style="font-size:46px">${wc.emoji}</div>
+      <h3>${prettyDate(e.date)}</h3>
+      <div style="color:var(--muted);font-size:13px">${wc.label} ・ ${e.score}${CONTENT.ui.scoreSuffix}</div>
+    </div>`;
+  h += `<div class="card msg-card" style="margin-top:16px"><div class="msg-head">${CONTENT.ui.msgHead}</div><div class="msg">${esc(buildMessage(e))}</div></div>`;
+  CONTENT.questions.forEach(q => {
+    const a = e.answers[q.id];
+    if (q.type === "scale") {
+      h += `<div class="qa"><div class="qt">${esc(q.label)}</div><div class="at">${a || "-"} / 5</div></div>`;
+    } else if (a && a.trim()) {
+      h += `<div class="qa"><div class="qt">${esc(q.label)}</div><div class="at">${esc(a)}</div></div>`;
+    }
+  });
+  h += `<button class="btn btn-danger" onclick="deleteEntry('${e.date}')">${CONTENT.ui.deleteBtn}</button>`;
+  h += `<button class="btn btn-ghost" onclick="closeSheet()">${CONTENT.ui.viewClose}</button>`;
+  h += `</div></div>`;
+  const wrap = document.createElement("div");
+  wrap.id = "sheetWrap";
+  wrap.innerHTML = h;
+  document.body.appendChild(wrap);
+}
+function closeSheet() { const w = document.getElementById("sheetWrap"); if (w) w.remove(); }
+
+function deleteEntry(date) {
+  if (!confirm(CONTENT.ui.deleteConfirm)) return;
+  delete entries[date];
+  persist();
+  closeSheet();
+  render();
+  toast(CONTENT.ui.deleted);
+}
+
+function resetAll() {
+  if (!confirm(CONTENT.ui.resetConfirm)) return;
+  entries = {};
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+  toast(CONTENT.ui.deleted);
+}
+
+/* 起動 */
+document.getElementById("lblToday").textContent = CONTENT.nav.today;
+document.getElementById("lblHistory").textContent = CONTENT.nav.history;
+probeStorage();
+render();
+</script>
+</body>
+</html>
